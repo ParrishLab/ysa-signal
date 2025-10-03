@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.dylib
+*.dll
+*.egg-info/
+dist/
+build/
+*.egg
+
+# C++ compiled files
+extensions/*.so
+extensions/*.dylib
+extensions/*.pyd
+extensions/build/
+extensions/*.o
+
+# Temporary files
+.temp/
+*.tmp
+*.h5
+*.brw
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
