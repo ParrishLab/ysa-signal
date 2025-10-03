@@ -28,15 +28,14 @@ except ImportError:
     sys.exit(1)
 
 
-def cli_mode(input_file, output_file, do_analysis=True, load_mode=False):
+def cli_mode(input_file, output_file, do_analysis=False):
     """
     Run in CLI mode.
 
     Args:
-        input_file: Input file path (.brw/.h5 or processed .h5)
+        input_file: Input file path (.brw/.h5)
         output_file: Output file path (.h5)
         do_analysis: Whether to perform seizure/SE analysis
-        load_mode: If True, load a processed file instead of processing
     """
     print("=" * 70)
     print("YSA Signal - CLI Mode")
@@ -48,24 +47,15 @@ def cli_mode(input_file, output_file, do_analysis=True, load_mode=False):
         return 1
 
     try:
-        if load_mode:
-            # Load processed file
-            print(f"\nLoading processed file: {input_file}")
-            processed_data = load_processed_data(input_file)
+        # Process raw file
+        print(f"\nProcessing file: {input_file}")
+        print(f"Analysis enabled: {do_analysis}")
 
-            # Save to new location if different
-            if input_file != output_file:
-                save_processed_data(processed_data, output_file)
-        else:
-            # Process raw file
-            print(f"\nProcessing file: {input_file}")
-            print(f"Analysis enabled: {do_analysis}")
+        processed_data = process_and_store(
+            input_file, do_analysis=do_analysis)
 
-            processed_data = process_and_store(
-                input_file, do_analysis=do_analysis)
-
-            # Save processed data
-            save_processed_data(processed_data, output_file)
+        # Save processed data
+        save_processed_data(processed_data, output_file)
 
         print("\n" + "=" * 70)
         print("Processing complete!")
@@ -107,7 +97,18 @@ def gui_mode():
         def __init__(self, master):
             self.master = master
             master.title("YSA Signal Analyzer")
-            master.geometry("900x600")
+
+            # Calculate screen size and set window to fullscreen with margin
+            screen_width = master.winfo_screenwidth()
+            screen_height = master.winfo_screenheight()
+            margin = 100
+            window_width = screen_width - (2 * margin)
+            window_height = screen_height - (2 * margin)
+            x_position = margin
+            y_position = margin
+
+            master.geometry(
+                f"{window_width}x{window_height}+{x_position}+{y_position}")
             master.resizable(True, True)
 
             # Create notebook (tabbed interface)
@@ -137,25 +138,9 @@ def gui_mode():
 
             # Subtitle
             subtitle = ttk.Label(main_frame,
-                                 text="Process .brw/.h5 files and save/load processed data",
+                                 text="Process .brw/.h5 files",
                                  font=("Helvetica", 10))
             subtitle.grid(row=1, column=0, columnspan=2, pady=(0, 30))
-
-            # Mode selection
-            mode_frame = ttk.LabelFrame(
-                main_frame, text="Select Mode", padding="10")
-            mode_frame.grid(row=2, column=0, columnspan=2,
-                            sticky=(tk.W, tk.E), pady=(0, 20))
-
-            self.mode = tk.StringVar(value="process")
-
-            ttk.Radiobutton(mode_frame, text="Process Raw File (.brw/.h5)",
-                            variable=self.mode, value="process",
-                            command=self.update_mode).grid(row=0, column=0, sticky=tk.W, padx=5)
-
-            ttk.Radiobutton(mode_frame, text="Load Processed File",
-                            variable=self.mode, value="load",
-                            command=self.update_mode).grid(row=0, column=1, sticky=tk.W, padx=5)
 
             # Input file selection
             input_frame = ttk.LabelFrame(
@@ -164,32 +149,31 @@ def gui_mode():
                              sticky=(tk.W, tk.E), pady=(0, 10))
 
             self.input_file = tk.StringVar()
-            self.input_label = ttk.Label(
-                input_frame, text="Select raw .brw/.h5 file:")
-            self.input_label.grid(row=0, column=0, sticky=tk.W, pady=(0, 5))
+            ttk.Label(input_frame, text="Select raw .brw/.h5 file:").grid(
+                row=0, column=0, sticky=tk.W, pady=(0, 5))
 
             input_entry_frame = ttk.Frame(input_frame)
             input_entry_frame.grid(row=1, column=0, sticky=(tk.W, tk.E))
 
-            ttk.Entry(input_entry_frame, textvariable=self.input_file,
-                      width=50).pack(side=tk.LEFT, fill=tk.X, expand=True)
+            ttk.Label(input_entry_frame, textvariable=self.input_file,
+                      relief="sunken", anchor="w").pack(side=tk.LEFT, fill=tk.X, expand=True)
             ttk.Button(input_entry_frame, text="Browse...",
                        command=self.browse_input).pack(side=tk.RIGHT, padx=(5, 0))
 
-            # Analysis option (only for process mode)
-            self.analysis_frame = ttk.Frame(main_frame)
-            self.analysis_frame.grid(
-                row=4, column=0, columnspan=2, pady=(0, 10))
+            # Analysis option
+            analysis_frame = ttk.Frame(main_frame)
+            analysis_frame.grid(
+                row=3, column=0, columnspan=2, pady=(0, 10))
 
             self.do_analysis = tk.BooleanVar(value=False)
-            ttk.Checkbutton(self.analysis_frame,
+            ttk.Checkbutton(analysis_frame,
                             text="Perform seizure/SE detection analysis",
                             variable=self.do_analysis).pack(anchor=tk.W)
 
             # Output file selection
             output_frame = ttk.LabelFrame(
                 main_frame, text="Output File", padding="10")
-            output_frame.grid(row=5, column=0, columnspan=2,
+            output_frame.grid(row=4, column=0, columnspan=2,
                               sticky=(tk.W, tk.E), pady=(0, 20))
 
             ttk.Label(output_frame, text="Save processed data as:").grid(
@@ -199,8 +183,8 @@ def gui_mode():
             output_entry_frame = ttk.Frame(output_frame)
             output_entry_frame.grid(row=1, column=0, sticky=(tk.W, tk.E))
 
-            ttk.Entry(output_entry_frame, textvariable=self.output_file,
-                      width=50).pack(side=tk.LEFT, fill=tk.X, expand=True)
+            ttk.Label(output_entry_frame, textvariable=self.output_file,
+                      relief="sunken", anchor="w").pack(side=tk.LEFT, fill=tk.X, expand=True)
             ttk.Button(output_entry_frame, text="Browse...",
                        command=self.browse_output).pack(side=tk.RIGHT, padx=(5, 0))
 
@@ -208,25 +192,25 @@ def gui_mode():
             self.process_button = ttk.Button(main_frame, text="Process File",
                                              command=self.process_file)
             self.process_button.grid(
-                row=6, column=0, columnspan=2, pady=(0, 10))
+                row=5, column=0, columnspan=2, pady=(0, 10))
 
             # Progress/Status
             self.status_text = tk.Text(
                 main_frame, height=10, width=70, state='disabled')
             self.status_text.grid(
-                row=7, column=0, columnspan=2, sticky=(tk.W, tk.E, tk.N, tk.S))
+                row=6, column=0, columnspan=2, sticky=(tk.W, tk.E, tk.N, tk.S))
 
             # Scrollbar for status
             scrollbar = ttk.Scrollbar(
                 main_frame, command=self.status_text.yview)
-            scrollbar.grid(row=7, column=2, sticky=(tk.N, tk.S))
+            scrollbar.grid(row=6, column=2, sticky=(tk.N, tk.S))
             self.status_text['yscrollcommand'] = scrollbar.set
 
             # Configure grid weights
             self.process_tab.columnconfigure(0, weight=1)
             self.process_tab.rowconfigure(0, weight=1)
             main_frame.columnconfigure(0, weight=1)
-            main_frame.rowconfigure(7, weight=1)
+            main_frame.rowconfigure(6, weight=1)
             input_frame.columnconfigure(0, weight=1)
             output_frame.columnconfigure(0, weight=1)
 
@@ -320,25 +304,10 @@ def gui_mode():
             # Store loaded data
             self.viewer_data = None
 
-        def update_mode(self):
-            """Update UI based on selected mode"""
-            if self.mode.get() == "process":
-                self.input_label.config(text="Select raw .brw/.h5 file:")
-                self.analysis_frame.grid()
-                self.process_button.config(text="Process File")
-            else:
-                self.input_label.config(text="Select processed .h5 file:")
-                self.analysis_frame.grid_remove()
-                self.process_button.config(text="Load and Save")
-
         def browse_input(self):
             """Browse for input file"""
-            if self.mode.get() == "process":
-                filetypes = [("BRW/H5 files", "*.brw *.h5"),
-                             ("All files", "*.*")]
-            else:
-                filetypes = [("Processed H5 files", "*.h5"),
-                             ("All files", "*.*")]
+            filetypes = [("BRW/H5 files", "*.brw *.h5"),
+                         ("All files", "*.*")]
 
             filename = filedialog.askopenfilename(
                 title="Select Input File",
@@ -348,9 +317,8 @@ def gui_mode():
                 self.input_file.set(filename)
 
                 # Auto-suggest output filename
-                if self.mode.get() == "process":
-                    base = os.path.splitext(filename)[0]
-                    self.output_file.set(f"{base}_processed.h5")
+                base = os.path.splitext(filename)[0]
+                self.output_file.set(f"{base}_processed.h5")
 
         def browse_output(self):
             """Browse for output file"""
@@ -395,80 +363,44 @@ def gui_mode():
             self.status_text.config(state='disabled')
 
             try:
-                if self.mode.get() == "process":
-                    self.log(f"Processing file: {input_file}")
-                    self.log(f"Analysis enabled: {self.do_analysis.get()}")
-                    self.log("Please wait, this may take a few minutes...")
-                    self.log("")
+                self.log(f"Processing file: {input_file}")
+                self.log(f"Analysis enabled: {self.do_analysis.get()}")
+                self.log("Please wait, this may take a few minutes...")
+                self.log("")
 
-                    # Suppress stdout during processing
-                    import io
-                    import sys
-                    from contextlib import redirect_stdout, redirect_stderr
+                # Suppress stdout during processing
+                import io
+                import sys
+                from contextlib import redirect_stdout, redirect_stderr
 
-                    old_stdout = sys.stdout
-                    old_stderr = sys.stderr
+                old_stdout = sys.stdout
+                old_stderr = sys.stderr
 
-                    try:
-                        sys.stdout = io.StringIO()
-                        sys.stderr = io.StringIO()
-                        processed_data = process_and_store(
-                            input_file,
-                            do_analysis=self.do_analysis.get()
-                        )
-                    finally:
-                        sys.stdout = old_stdout
-                        sys.stderr = old_stderr
+                try:
+                    sys.stdout = io.StringIO()
+                    sys.stderr = io.StringIO()
+                    processed_data = process_and_store(
+                        input_file,
+                        do_analysis=self.do_analysis.get()
+                    )
+                finally:
+                    sys.stdout = old_stdout
+                    sys.stderr = old_stderr
 
-                    self.log(
-                        f"Processing complete! Processed {len(processed_data.active_channels)} channels.")
-                    self.log("")
-                    self.log(f"Saving processed data to: {output_file}")
+                self.log(
+                    f"Processing complete! Processed {len(processed_data.active_channels)} channels.")
+                self.log("")
+                self.log(f"Saving processed data to: {output_file}")
 
-                    try:
-                        sys.stdout = io.StringIO()
-                        sys.stderr = io.StringIO()
-                        save_processed_data(processed_data, output_file)
-                    finally:
-                        sys.stdout = old_stdout
-                        sys.stderr = old_stderr
+                try:
+                    sys.stdout = io.StringIO()
+                    sys.stderr = io.StringIO()
+                    save_processed_data(processed_data, output_file)
+                finally:
+                    sys.stdout = old_stdout
+                    sys.stderr = old_stderr
 
-                    self.log("Successfully saved processed data")
-
-                else:
-                    self.log(f"Loading processed file: {input_file}")
-                    self.log("")
-
-                    import io
-                    import sys
-
-                    old_stdout = sys.stdout
-                    old_stderr = sys.stderr
-
-                    try:
-                        sys.stdout = io.StringIO()
-                        sys.stderr = io.StringIO()
-                        processed_data = load_processed_data(input_file)
-                    finally:
-                        sys.stdout = old_stdout
-                        sys.stderr = old_stderr
-
-                    self.log(
-                        f"Successfully loaded {len(processed_data.active_channels)} channels")
-
-                    if input_file != output_file:
-                        self.log("")
-                        self.log(f"Saving to: {output_file}")
-
-                        try:
-                            sys.stdout = io.StringIO()
-                            sys.stderr = io.StringIO()
-                            save_processed_data(processed_data, output_file)
-                        finally:
-                            sys.stdout = old_stdout
-                            sys.stderr = old_stderr
-
-                        self.log("Successfully saved processed data")
+                self.log("Successfully saved processed data")
 
                 self.log("\n" + "=" * 60)
                 self.log("Processing complete!")
@@ -672,14 +604,11 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Process a raw file with analysis:
-  python ysa_signal.py input.brw output.h5
+  # Process a raw file without analysis (default):
+  python ysa_signal.py input.brw output_processed.h5
 
-  # Process without analysis:
-  python ysa_signal.py input.brw output.h5 --no-analysis
-
-  # Load and re-save a processed file:
-  python ysa_signal.py processed.h5 new_location.h5 --load
+  # Process with analysis:
+  python ysa_signal.py input.brw output_processed.h5 --do-analysis
 
   # Launch GUI (no arguments):
   python ysa_signal.py
@@ -690,10 +619,8 @@ Examples:
                         help='Input file path (.brw/.h5)')
     parser.add_argument('output_file', nargs='?',
                         help='Output file path (.h5)')
-    parser.add_argument('--no-analysis', action='store_true',
-                        help='Skip seizure/SE detection analysis')
-    parser.add_argument('--load', action='store_true',
-                        help='Load a processed file instead of processing raw data')
+    parser.add_argument('--do-analysis', action='store_true',
+                        help='Perform seizure/SE detection analysis')
 
     args = parser.parse_args()
 
@@ -701,8 +628,7 @@ Examples:
     if args.input_file and args.output_file:
         # CLI mode
         return cli_mode(args.input_file, args.output_file,
-                        do_analysis=not args.no_analysis,
-                        load_mode=args.load)
+                        do_analysis=args.do_analysis)
     elif args.input_file or args.output_file:
         print("Error: Both input and output files must be specified for CLI mode.")
         print("Run with --help for usage information.")

@@ -67,18 +67,18 @@ This launches a graphical interface where you can:
 - Select input files (Downsampled .brw)
 - Choose whether to perform seizure analysis (default is off for speed)
 - Save processed data
-- Load previously processed files to verify contents
+- View signals in an interactive plot viewer
 
 #### CLI Mode (For advanced uses and automation)
 
 Process a file from the command line:
 
 ```bash
-# Process with analysis (default)
+# Process without analysis (default)
 python ysa_signal.py input.brw output_processed.h5
 
-# Process without analysis
-python ysa_signal.py input.brw output_processed.h5 --no-analysis
+# Process with analysis
+python ysa_signal.py input.brw output_processed.h5 --do-analysis
 ```
 
 ## Output Format
