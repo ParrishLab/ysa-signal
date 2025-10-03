@@ -1,4 +1,6 @@
-# YSA Signal (Mac only for now - Windows support coming soon)
+# YSA Signal
+
+### Mac only for now - Windows support coming soon
 
 **Standalone signal analyzer for downsampled .brw files**
 
