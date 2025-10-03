@@ -244,60 +244,63 @@ def gui_mode():
             file_entry_frame = ttk.Frame(file_frame)
             file_entry_frame.pack(fill='x')
 
-            ttk.Entry(file_entry_frame, textvariable=self.viewer_file).pack(
-                side=tk.LEFT, fill=tk.X, expand=True)
-            ttk.Button(file_entry_frame, text="Browse...", command=self.browse_viewer_file).pack(
-                side=tk.RIGHT, padx=(5, 0))
+            ttk.Label(file_entry_frame, textvariable=self.viewer_file,
+                      relief="sunken", anchor="w").pack(side=tk.LEFT, fill=tk.X, expand=True)
             ttk.Button(file_entry_frame, text="Load",
                        command=self.load_viewer_file).pack(side=tk.RIGHT)
+            ttk.Button(file_entry_frame, text="Browse...", command=self.browse_viewer_file).pack(
+                side=tk.RIGHT, padx=(0, 5))
 
-            # Channel selection with fuzzy search
+            # Create horizontal layout: grid on left, plot on right
+            content_frame = ttk.Frame(main_frame)
+            content_frame.pack(fill='both', expand=True)
+
+            # Left side: Channel grid (larger)
+            left_frame = ttk.Frame(content_frame)
+            left_frame.pack(side=tk.LEFT, fill='both',
+                            expand=True, padx=(0, 10))
+
             channel_frame = ttk.LabelFrame(
-                main_frame, text="Select Channel", padding="10")
-            channel_frame.pack(fill='x', pady=(0, 10))
+                left_frame, text="Select Channel", padding="10")
+            channel_frame.pack(fill='both', expand=True)
 
-            ttk.Label(channel_frame, text="Search:").pack(
-                side=tk.LEFT, padx=(0, 5))
+            # Create canvas for grid (fills available space)
+            self.grid_canvas = tk.Canvas(
+                channel_frame, bg='white', highlightthickness=0)
+            self.grid_canvas.pack(fill='both', expand=True, pady=10)
 
-            self.channel_search = tk.StringVar()
-            self.channel_search.trace('w', self.filter_channels)
-            search_entry = ttk.Entry(
-                channel_frame, textvariable=self.channel_search, width=15)
-            search_entry.pack(side=tk.LEFT, padx=(0, 10))
-
-            # Listbox for filtered channels
-            list_frame = ttk.Frame(channel_frame)
-            list_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-
-            self.channel_listbox = tk.Listbox(
-                list_frame, height=5, exportselection=False)
-            self.channel_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-            self.channel_listbox.bind(
-                '<<ListboxSelect>>', self.on_channel_select)
-            self.channel_listbox.bind(
-                '<Double-Button-1>', lambda e: self.plot_signal())
-
-            list_scrollbar = ttk.Scrollbar(
-                list_frame, command=self.channel_listbox.yview)
-            list_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-            self.channel_listbox.config(yscrollcommand=list_scrollbar.set)
-
-            ttk.Button(channel_frame, text="Plot Signal", command=self.plot_signal).pack(
-                side=tk.LEFT, padx=(10, 0))
-
-            # Store all channels and selected channel
-            self.all_channels = []
+            # Store grid data
+            self.grid_cells = {}  # (row, col) -> cell_id
             self.selected_channel = None
+            self.selected_cell_id = None
+            self.hovered_cell_id = None
+            self.hovered_channel = None
+            self.all_channels = []
 
-            # Plot area
-            self.fig = Figure(figsize=(8, 5), dpi=100)
+            # Tooltip label
+            self.tooltip_label = ttk.Label(
+                channel_frame, text="", relief="solid", borderwidth=1, background="lightyellow")
+
+            # Create initial empty grid
+            self.create_grid()
+
+            # Right side: Plot area (smaller, fixed width)
+            right_frame = ttk.Frame(content_frame, width=500)
+            right_frame.pack(side=tk.LEFT, fill='both')
+            right_frame.pack_propagate(False)  # Maintain fixed width
+
+            plot_frame = ttk.LabelFrame(
+                right_frame, text="Signal", padding="10")
+            plot_frame.pack(fill='both', expand=True)
+
+            self.fig = Figure(figsize=(6, 5), dpi=100)
             self.ax = self.fig.add_subplot(111)
             self.ax.set_xlabel('Time (s)')
             self.ax.set_ylabel('Voltage (V)')
             self.ax.set_title('Select a file and channel to view')
             self.ax.grid(True, alpha=0.3)
 
-            self.canvas = FigureCanvasTkAgg(self.fig, master=main_frame)
+            self.canvas = FigureCanvasTkAgg(self.fig, master=plot_frame)
             self.canvas.draw()
             self.canvas.get_tk_widget().pack(fill='both', expand=True)
 
@@ -423,42 +426,175 @@ def gui_mode():
             finally:
                 self.process_button.config(state='normal')
 
-        def filter_channels(self, *args):
-            """Filter channel list based on search text"""
-            search_text = self.channel_search.get().lower()
+        def create_grid(self):
+            """Create a 64x64 grid of cells"""
+            grid_size = 64
 
-            # Clear listbox
-            self.channel_listbox.delete(0, tk.END)
+            # Clear existing grid
+            self.grid_canvas.delete("all")
+            self.grid_cells.clear()
 
-            # Filter and display channels
+            # Update canvas to get current size
+            self.grid_canvas.update()
+            canvas_width = self.grid_canvas.winfo_width()
+            canvas_height = self.grid_canvas.winfo_height()
+
+            # Calculate cell size to fit canvas (use smaller dimension)
+            cell_size = min(canvas_width, canvas_height) / grid_size
+
+            # Calculate offset to center the grid
+            grid_pixel_size = grid_size * cell_size
+            x_offset = (canvas_width - grid_pixel_size) / 2
+            y_offset = (canvas_height - grid_pixel_size) / 2
+
+            # Create 64x64 grid (centered in canvas)
+            for row in range(grid_size):
+                for col in range(grid_size):
+                    x1 = x_offset + col * cell_size
+                    y1 = y_offset + row * cell_size
+                    x2 = x1 + cell_size
+                    y2 = y1 + cell_size
+
+                    # Create cell (default white/inactive)
+                    cell_id = self.grid_canvas.create_rectangle(
+                        x1, y1, x2, y2,
+                        fill='white',
+                        outline='darkgray',
+                        width=0.5,
+                        tags=('cell', f'r{row}c{col}')
+                    )
+
+                    self.grid_cells[(row, col)] = cell_id
+
+            # Bind events
+            self.grid_canvas.bind('<Button-1>', self.on_grid_click)
+            self.grid_canvas.bind('<Motion>', self.on_grid_hover)
+            self.grid_canvas.bind('<Leave>', self.hide_tooltip)
+            self.grid_canvas.bind(
+                '<Configure>', lambda e: self.create_grid())  # Redraw on resize
+
+        def update_grid_for_channels(self):
+            """Update grid to show only active channels"""
+            # Reset all cells to white (active)
+            for (row, col), cell_id in self.grid_cells.items():
+                self.grid_canvas.itemconfig(cell_id, fill='white')
+
+            # Highlight active channels in black
             for row, col in self.all_channels:
-                channel_str = f"({row}, {col})"
-                search_str = f"{row}{col}"
+                if (row, col) in self.grid_cells:
+                    cell_id = self.grid_cells[(row, col)]
+                    self.grid_canvas.itemconfig(cell_id, fill='black')
 
-                # Fuzzy match: check if all characters in search appear in order
-                if not search_text or self.fuzzy_match(search_text, search_str):
-                    self.channel_listbox.insert(tk.END, channel_str)
+        def on_grid_click(self, event):
+            """Handle grid cell click"""
+            canvas = event.widget
+            x = canvas.canvasx(event.x)
+            y = canvas.canvasy(event.y)
 
-        def fuzzy_match(self, pattern, text):
-            """Simple fuzzy matching: all chars in pattern must appear in order in text"""
-            pattern_idx = 0
-            for char in text:
-                if pattern_idx < len(pattern) and char == pattern[pattern_idx]:
-                    pattern_idx += 1
-            return pattern_idx == len(pattern)
+            items = canvas.find_overlapping(x, y, x, y)
+            if items:
+                tags = canvas.gettags(items[0])
+                for tag in tags:
+                    if tag.startswith('r') and 'c' in tag:
+                        # Parse row and col from tag
+                        parts = tag[1:].split('c')
+                        if len(parts) == 2:
+                            row = int(parts[0])
+                            col = int(parts[1])
 
-        def on_channel_select(self, event):
-            """Handle channel selection from listbox"""
-            selection = self.channel_listbox.curselection()
-            if selection:
-                selected_text = self.channel_listbox.get(selection[0])
-                # Parse "(row, col)" format
-                selected_text = selected_text.strip('()')
-                parts = selected_text.split(',')
-                if len(parts) == 2:
-                    row = int(parts[0].strip())
-                    col = int(parts[1].strip())
-                    self.selected_channel = (row, col)
+                            # Check if this is an active channel
+                            if (row, col) in self.all_channels:
+                                # Deselect previous
+                                if self.selected_cell_id:
+                                    self.grid_canvas.itemconfig(
+                                        self.selected_cell_id, fill='white')
+
+                                # Select new
+                                self.selected_channel = (row, col)
+                                self.selected_cell_id = self.grid_cells[(
+                                    row, col)]
+                                self.grid_canvas.itemconfig(
+                                    self.selected_cell_id, fill='green')
+
+                                # Auto-plot
+                                self.plot_signal()
+                        break
+
+        def on_grid_hover(self, event):
+            """Show tooltip and highlight on hover"""
+            canvas = event.widget
+            x = canvas.canvasx(event.x)
+            y = canvas.canvasy(event.y)
+
+            items = canvas.find_overlapping(x, y, x, y)
+            if items:
+                tags = canvas.gettags(items[0])
+                for tag in tags:
+                    if tag.startswith('r') and 'c' in tag:
+                        # Parse row and col from tag
+                        parts = tag[1:].split('c')
+                        if len(parts) == 2:
+                            row = int(parts[0])
+                            col = int(parts[1])
+
+                            # Update hover highlight
+                            if (row, col) != self.hovered_channel:
+                                # Unhighlight previous hover
+                                if self.hovered_cell_id and self.hovered_channel != self.selected_channel:
+                                    prev_row, prev_col = self.hovered_channel
+                                    if self.hovered_channel in self.all_channels:
+                                        self.grid_canvas.itemconfig(
+                                            self.hovered_cell_id, fill='black')
+                                    else:
+                                        self.grid_canvas.itemconfig(
+                                            self.hovered_cell_id, fill='white')
+
+                                # Highlight current hover (only if not selected)
+                                if (row, col) != self.selected_channel:
+                                    cell_id = self.grid_cells[(row, col)]
+                                    if (row, col) in self.all_channels:
+                                        self.grid_canvas.itemconfig(
+                                            cell_id, fill='lightblue')
+                                    else:
+                                        self.grid_canvas.itemconfig(
+                                            cell_id, fill='gray')
+                                    self.hovered_cell_id = cell_id
+                                    self.hovered_channel = (row, col)
+
+                            # Show tooltip
+                            self.show_tooltip(event, row, col)
+                        break
+            else:
+                self.clear_hover()
+                self.hide_tooltip()
+
+        def show_tooltip(self, event, row, col):
+            """Display tooltip with channel coordinates"""
+            self.tooltip_label.config(text=f"({row + 1}, {col + 1})")
+            # Position tooltip near mouse cursor (offset slightly to avoid blocking)
+            # Get canvas position relative to its parent
+            canvas_x = self.grid_canvas.winfo_x()
+            canvas_y = self.grid_canvas.winfo_y()
+            x = canvas_x + event.x + 10
+            y = canvas_y + event.y - 20
+            self.tooltip_label.place(x=x, y=y)
+            self.tooltip_label.lift()
+
+        def hide_tooltip(self, event=None):
+            """Hide tooltip"""
+            self.tooltip_label.place_forget()
+
+        def clear_hover(self):
+            """Clear hover highlight"""
+            if self.hovered_cell_id and self.hovered_channel != self.selected_channel:
+                if self.hovered_channel in self.all_channels:
+                    self.grid_canvas.itemconfig(
+                        self.hovered_cell_id, fill='black')
+                else:
+                    self.grid_canvas.itemconfig(
+                        self.hovered_cell_id, fill='white')
+            self.hovered_cell_id = None
+            self.hovered_channel = None
 
         def browse_viewer_file(self):
             """Browse for processed file to view"""
@@ -503,12 +639,16 @@ def gui_mode():
 
                 # Populate channel list
                 self.all_channels = sorted(self.viewer_data.active_channels)
-                self.filter_channels()  # Display all channels initially
+                self.update_grid_for_channels()
 
                 # Select first channel by default
                 if self.all_channels:
                     self.selected_channel = self.all_channels[0]
-                    self.channel_listbox.selection_set(0)
+                    self.selected_cell_id = self.grid_cells.get(
+                        self.all_channels[0])
+                    if self.selected_cell_id:
+                        self.grid_canvas.itemconfig(
+                            self.selected_cell_id, fill='green')
 
                 messagebox.showinfo("Success",
                                     f"Loaded {len(self.viewer_data.active_channels)} channels\n"
