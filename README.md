@@ -166,8 +166,8 @@ pytest tests/test_helper_functions.py -v
 
 The project uses GitHub Actions to automatically run tests on every pull request. Tests must pass before merging to main. The CI pipeline:
 
-- Tests on macOS 12, 13, 14, and latest
-- Tests with Python 3.8, 3.9, 3.10, 3.11, and 3.12
+- Tests on macOS 12 (minimum supported) and latest
+- Tests with Python 3.10
 - Verifies the setup wizard runs correctly
 - Runs all unit tests with coverage reporting
 
