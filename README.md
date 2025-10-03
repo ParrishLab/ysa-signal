@@ -1,4 +1,4 @@
-# YSA Signal
+# YSA Signal (Mac only for now - Windows support coming soon)
 
 **Standalone signal analyzer for downsampled .brw files**
 
@@ -185,7 +185,7 @@ export HDF5_DIR=/path/to/hdf5
 
 ### Compilation errors
 
-- Make sure you have a C++ compiler installed (gcc/clang on Linux/macOS, MSVC on Windows)
+- Make sure you have a C++ compiler installed (gcc/clang on macOS, MSVC on Windows)
 - Check that Python development headers are installed
 - Try updating pybind11: `pip install --upgrade pybind11`
 
