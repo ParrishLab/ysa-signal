@@ -196,7 +196,3 @@ Copyright © 2025 Jake Cahoon
 ## Support
 
 For issues and questions, please contact jacobbcahoon@gmail.com or shoot me a text at (385) 307-9925
-
-```
-
-```
