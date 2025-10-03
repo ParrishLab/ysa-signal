@@ -328,7 +328,7 @@ def get_channel_data(processed_data: ProcessedData, row: int, col: int) -> Optio
         raise ValueError(
             f"Invalid channel coordinates: ({row}, {col}). Must be 1-64.")
 
-    return processed_data.data[row - 1, col - 1]
+    return processed_data.data[row - 2, col - 1]
 
 
 if __name__ == "__main__":
