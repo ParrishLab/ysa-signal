@@ -157,6 +157,8 @@ brew install hdf5
 conda install -c conda-forge hdf5
 ```
 
+This can come in handy to view hdf5 files: [https://myhdf5.hdfgroup.org/](https://myhdf5.hdfgroup.org/)
+
 ### Manual Installation
 
 1. Download from https://github.com/HDFGroup/hdf5/releases
