@@ -16,4 +16,4 @@ jobs:
           message: "New GitHub issue: ${{ github.event.issue.title }} - ${{ github.event.issue.html_url }}"
         env:
           TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
-          TWILIO_API_KEY: ${{ secrets.TWILIO_AUTH_TOKEN }}
+          TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
