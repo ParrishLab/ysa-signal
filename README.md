@@ -136,12 +136,40 @@ sz_times = channel_data['SzTimes']
 ## Requirements
 
 - Python 3.6 or higher
+- macOS 12.0 or higher (Monterey or later)
 - numpy
 - h5py
 - pybind11
 - HDF5 C++ library
 
-The setup wizard will help you install all of these.
+The setup wizard will help you install all of these and verify compatibility.
+
+## Testing
+
+YSA Signal includes comprehensive unit tests to ensure reliability. To run the tests:
+
+```bash
+# Install test dependencies
+pip install -r requirements-dev.txt
+
+# Run all tests
+pytest
+
+# Run tests with coverage report
+pytest --cov=. --cov-report=term
+
+# Run specific test file
+pytest tests/test_helper_functions.py -v
+```
+
+### Continuous Integration
+
+The project uses GitHub Actions to automatically run tests on every pull request. Tests must pass before merging to main. The CI pipeline:
+
+- Tests on macOS 12 (minimum supported) and latest
+- Tests with Python 3.10
+- Verifies the setup wizard runs correctly
+- Runs all unit tests with coverage reporting
 
 ## HDF5 Installation
 

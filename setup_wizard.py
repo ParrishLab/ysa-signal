@@ -51,6 +51,33 @@ def print_info(text: str):
     print(f"{Colors.OKCYAN}ℹ {text}{Colors.ENDC}")
 
 
+def check_macos_version():
+    """Check if macOS version is compatible (12.0+)"""
+    if sys.platform != 'darwin':
+        return True  # Not macOS, skip check
+
+    print_info("Checking macOS version...")
+    try:
+        import platform
+        version_str = platform.mac_ver()[0]
+        if version_str:
+            major_version = int(version_str.split('.')[0])
+            if major_version >= 12:
+                print_success(f"macOS {version_str} detected (compatible)")
+                return True
+            else:
+                print_error(f"macOS {version_str} detected. macOS 12.0 or higher is required.")
+                print_error("Please upgrade your operating system to continue.")
+                return False
+        else:
+            print_warning("Could not determine macOS version, continuing anyway...")
+            return True
+    except Exception as e:
+        print_warning(f"Error checking macOS version: {e}")
+        print_warning("Continuing anyway...")
+        return True
+
+
 def check_python_version():
     """Check if Python version is compatible"""
     print_info("Checking Python version...")
@@ -308,6 +335,10 @@ def main():
     """Main setup wizard"""
     print_header("YSA Signal Setup Wizard")
     print("Welcome to YSA Signal! This wizard will help you set up the application.\n")
+
+    # Check macOS version if on macOS
+    if not check_macos_version():
+        sys.exit(1)
 
     # Check Python version
     if not check_python_version():
