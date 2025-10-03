@@ -157,19 +157,17 @@ brew install hdf5
 conda install -c conda-forge hdf5
 ```
 
-````
-
 ### Manual Installation
 
 1. Download from https://github.com/HDFGroup/hdf5/releases
-  - Choose the appropriate version for your OS
-  - Download the tarball or zip file
+   - Choose the appropriate version for your OS
+   - Download the tarball or zip file
 2. Extract and install (you should now see an `hdf5` directory with `bin`, `include`, `lib`, etc.)
 3. Set `HDF5_DIR` environment variable to the installation path
 
 ```bashbash
 export HDF5_DIR=/path/to/hdf5
-````
+```
 
 ## Troubleshooting
 
