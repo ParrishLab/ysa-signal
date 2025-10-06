@@ -52,7 +52,7 @@ def print_info(text: str):
 
 
 def check_macos_version():
-    """Check if macOS version is compatible (12.0+)"""
+    """Check if macOS version is compatible (10.0+)"""
     if sys.platform != 'darwin':
         return True  # Not macOS, skip check
 
@@ -62,11 +62,11 @@ def check_macos_version():
         version_str = platform.mac_ver()[0]
         if version_str:
             major_version = int(version_str.split('.')[0])
-            if major_version >= 12:
+            if major_version >= 10:
                 print_success(f"macOS {version_str} detected (compatible)")
                 return True
             else:
-                print_error(f"macOS {version_str} detected. macOS 12.0 or higher is required.")
+                print_error(f"macOS {version_str} detected. macOS 10.0 or higher is required.")
                 print_error("Please upgrade your operating system to continue.")
                 return False
         else:
