@@ -265,7 +265,7 @@ with open('README.md', 'r', encoding='utf-8') as f:
 
 setup(
     name='ysa-signal',
-    version='1.0.4',
+    version='1.0.5',
     author='Jake Cahoon',
     author_email='jacobbcahoon@gmail.com',
     description='YSA Signal - Standalone signal analyzer for .brw/.h5 files',
