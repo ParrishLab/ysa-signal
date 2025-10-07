@@ -41,9 +41,9 @@ def _check_for_updates():
                 print(f"│ Update available: {__version__} → {latest_version}".ljust(
                     51) + "│", file=sys.stderr)
                 print(
-                    f"│ Run: pip install -U --force-reinstall ysa-signal".ljust(51) + "│", file=sys.stderr)
+                    "│ Run: pip install -U --force-reinstall ysa-signal".ljust(51) + "│", file=sys.stderr)
                 print(f"└{'─' * 50}┘\033[0m\n", file=sys.stderr)
-    except:
+    except Exception:
         # Silently fail if check fails (offline, timeout, etc.)
         pass
 
@@ -52,7 +52,7 @@ def _check_for_updates():
 try:
     import threading
     threading.Thread(target=_check_for_updates, daemon=True).start()
-except:
+except Exception:
     pass
 
 # Import main entry point
@@ -64,11 +64,11 @@ try:
         save_processed_data,
         load_processed_data,
         get_channel_data,
-        CPP_AVAILABLE,
+        cpp_available,
     )
 except ImportError:
     # C++ extensions not yet built
-    CPP_AVAILABLE = False
+    cpp_available = False
 
 __all__ = [
     'main',
@@ -76,5 +76,5 @@ __all__ = [
     'save_processed_data',
     'load_processed_data',
     'get_channel_data',
-    'CPP_AVAILABLE',
+    'cpp_available',
 ]

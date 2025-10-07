@@ -14,11 +14,11 @@ from typing import Dict, Tuple, Optional, Any
 from _version import __version__
 
 # Try to import C++ extensions
-CPP_AVAILABLE = False
+cpp_available = False
 try:
     # Try direct import (when installed via pip as py_modules)
     from sz_se_detect import processAllChannels
-    CPP_AVAILABLE = True
+    cpp_available = True
 except ImportError:
     try:
         # Fallback to local extensions directory (for development)
@@ -26,9 +26,9 @@ except ImportError:
         if os.path.isdir(extensions_dir):
             sys.path.insert(0, extensions_dir)
         from sz_se_detect import processAllChannels
-        CPP_AVAILABLE = True
+        cpp_available = True
     except ImportError:
-        CPP_AVAILABLE = False
+        cpp_available = False
         print("Warning: C++ extension not available. Please run setup first.")
 
 
@@ -112,7 +112,7 @@ def process_and_store(file_path: str, do_analysis: bool = True,
         RuntimeError: If C++ extension is not available
         FileNotFoundError: If the input file doesn't exist
     """
-    if not CPP_AVAILABLE:
+    if not cpp_available:
         raise RuntimeError(
             "C++ extension not available. Please run the setup wizard first."
         )
@@ -342,7 +342,7 @@ def get_channel_data(processed_data: ProcessedData, row: int, col: int) -> Optio
 
 if __name__ == "__main__":
     # Simple test
-    if CPP_AVAILABLE:
+    if cpp_available:
         print("C++ extension loaded successfully!")
         print("Helper functions are ready to use.")
     else:

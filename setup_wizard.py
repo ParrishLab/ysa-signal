@@ -66,11 +66,14 @@ def check_macos_version():
                 print_success(f"macOS {version_str} detected (compatible)")
                 return True
             else:
-                print_error(f"macOS {version_str} detected. macOS 10.0 or higher is required.")
-                print_error("Please upgrade your operating system to continue.")
+                print_error(
+                    f"macOS {version_str} detected. macOS 10.0 or higher is required.")
+                print_error(
+                    "Please upgrade your operating system to continue.")
                 return False
         else:
-            print_warning("Could not determine macOS version, continuing anyway...")
+            print_warning(
+                "Could not determine macOS version, continuing anyway...")
             return True
     except Exception as e:
         print_warning(f"Error checking macOS version: {e}")
@@ -319,7 +322,7 @@ def verify_installation():
         import helper_functions
         print_success("helper_functions module loaded successfully")
 
-        if helper_functions.CPP_AVAILABLE:
+        if helper_functions.cpp_available:
             print_success("All components verified!")
             return True
         else:
