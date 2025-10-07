@@ -28,7 +28,7 @@ except ImportError:
     sys.exit(1)
 
 
-def cli_mode(input_file, output_file, do_analysis=False):
+def cli_mode(input_file: str, output_file: str, do_analysis: bool = False):
     """
     Run in CLI mode.
 
@@ -55,7 +55,8 @@ def cli_mode(input_file, output_file, do_analysis=False):
             input_file, do_analysis=do_analysis)
 
         # Save processed data
-        save_processed_data(processed_data, output_file)
+        save_processed_data(processed_data=processed_data,
+                            output_file=output_file)
 
         print("\n" + "=" * 70)
         print("Processing complete!")
@@ -81,7 +82,7 @@ def gui_mode():
         import tkinter as tk
         from tkinter import filedialog, messagebox, ttk
     except ImportError:
-        print("Error: tkinter not available. Please install tkinter.")
+        print("Error: tkinter not available. Please install tkinter!")
         return 1
 
     if not CPP_AVAILABLE:
@@ -94,7 +95,7 @@ def gui_mode():
         return 1
 
     class YSASignalGUI:
-        def __init__(self, master):
+        def __init__(self, master: tk.Tk):
             self.master = master
             master.title("YSA Signal Analyzer")
 
@@ -129,7 +130,7 @@ def gui_mode():
         def init_process_tab(self):
             """Initialize the process files tab"""
             main_frame = ttk.Frame(self.process_tab, padding="20")
-            main_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+            main_frame.grid(row=0, column=0, sticky="nsew")
 
             # Title
             title = ttk.Label(main_frame, text="YSA Signal Analyzer",
@@ -146,14 +147,14 @@ def gui_mode():
             input_frame = ttk.LabelFrame(
                 main_frame, text="Input File", padding="10")
             input_frame.grid(row=3, column=0, columnspan=2,
-                             sticky=(tk.W, tk.E), pady=(0, 10))
+                             sticky="ew", pady=(0, 10))
 
             self.input_file = tk.StringVar()
             ttk.Label(input_frame, text="Select raw .brw/.h5 file:").grid(
                 row=0, column=0, sticky=tk.W, pady=(0, 5))
 
             input_entry_frame = ttk.Frame(input_frame)
-            input_entry_frame.grid(row=1, column=0, sticky=(tk.W, tk.E))
+            input_entry_frame.grid(row=1, column=0, sticky="ew")
 
             ttk.Label(input_entry_frame, textvariable=self.input_file,
                       relief="sunken", anchor="w").pack(side=tk.LEFT, fill=tk.X, expand=True)
@@ -174,14 +175,14 @@ def gui_mode():
             output_frame = ttk.LabelFrame(
                 main_frame, text="Output File", padding="10")
             output_frame.grid(row=4, column=0, columnspan=2,
-                              sticky=(tk.W, tk.E), pady=(0, 20))
+                              sticky="ew", pady=(0, 20))
 
             ttk.Label(output_frame, text="Save processed data as:").grid(
                 row=0, column=0, sticky=tk.W, pady=(0, 5))
 
             self.output_file = tk.StringVar()
             output_entry_frame = ttk.Frame(output_frame)
-            output_entry_frame.grid(row=1, column=0, sticky=(tk.W, tk.E))
+            output_entry_frame.grid(row=1, column=0, sticky="ew")
 
             ttk.Label(output_entry_frame, textvariable=self.output_file,
                       relief="sunken", anchor="w").pack(side=tk.LEFT, fill=tk.X, expand=True)
@@ -198,12 +199,12 @@ def gui_mode():
             self.status_text = tk.Text(
                 main_frame, height=10, width=70, state='disabled')
             self.status_text.grid(
-                row=6, column=0, columnspan=2, sticky=(tk.W, tk.E, tk.N, tk.S))
+                row=6, column=0, columnspan=2, sticky="nsew")
 
             # Scrollbar for status
             scrollbar = ttk.Scrollbar(
                 main_frame, command=self.status_text.yview)
-            scrollbar.grid(row=6, column=2, sticky=(tk.N, tk.S))
+            scrollbar.grid(row=6, column=2, sticky="ns")
             self.status_text['yscrollcommand'] = scrollbar.set
 
             # Configure grid weights
