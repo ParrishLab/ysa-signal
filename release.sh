@@ -42,8 +42,8 @@ if [ -n "$(git status --porcelain)" ]; then
   fi
 fi
 
-# Get current version from setup.py
-CURRENT_VERSION=$(grep "version=" setup.py | head -1 | sed "s/.*version='\([^']*\)'.*/\1/")
+# Get current version from _version.py
+CURRENT_VERSION=$(grep "__version__" _version.py | sed "s/__version__ = '\([^']*\)'/\1/")
 print_step "Current version: $CURRENT_VERSION"
 
 # Ask for version bump type
@@ -90,12 +90,10 @@ esac
 if [ "$NEW_VERSION" != "$CURRENT_VERSION" ]; then
   print_step "Bumping version from $CURRENT_VERSION to $NEW_VERSION"
 
-  # Update version in all files
-  sed -i '' "s/version.*=.*\"$CURRENT_VERSION\"/version = \"$NEW_VERSION\"/" pyproject.toml
-  sed -i '' "s/version='$CURRENT_VERSION'/version='$NEW_VERSION'/" setup.py
-  sed -i '' "s/__version__ = '$CURRENT_VERSION'/__version__ = '$NEW_VERSION'/" __init__.py
+  # Update version in single source of truth
+  sed -i '' "s/__version__ = '$CURRENT_VERSION'/__version__ = '$NEW_VERSION'/" _version.py
 
-  print_step "Updated version in pyproject.toml, setup.py, and __init__.py"
+  print_step "Updated version in _version.py"
 fi
 
 # Run tests
@@ -166,7 +164,7 @@ if [ "$NEW_VERSION" != "$CURRENT_VERSION" ]; then
   read -p "Create git commit and tag for v$NEW_VERSION? (y/n) " -n 1 -r
   echo
   if [[ $REPLY =~ ^[Yy]$ ]]; then
-    git add setup.py pyproject.toml __init__.py
+    git add _version.py
     git commit -m "Release v$NEW_VERSION"
     git tag -a "v$NEW_VERSION" -m "Release version $NEW_VERSION"
     print_step "✓ Created commit and tag v$NEW_VERSION"
