@@ -13,36 +13,6 @@ from typing import Dict, Tuple, Optional, Any
 
 from _version import __version__
 
-# Check for updates when module is imported
-def _check_for_updates():
-    """Check if a newer version is available on PyPI"""
-    try:
-        import urllib.request
-        import json
-
-        # Fetch latest version from PyPI
-        url = "https://pypi.org/pypi/ysa-signal/json"
-        with urllib.request.urlopen(url, timeout=2) as response:
-            data = json.loads(response.read().decode())
-            latest_version = data['info']['version']
-
-            # Compare versions
-            if latest_version != __version__:
-                print(f"\n\033[93m┌{'─' * 50}┐", file=sys.stderr)
-                print(f"│ Update available: {__version__} → {latest_version}".ljust(51) + "│", file=sys.stderr)
-                print(f"│ Run: pip install --upgrade ysa-signal".ljust(51) + "│", file=sys.stderr)
-                print(f"└{'─' * 50}┘\033[0m\n", file=sys.stderr)
-    except:
-        # Silently fail if check fails (offline, timeout, etc.)
-        pass
-
-# Run update check in background (non-blocking)
-try:
-    import threading
-    threading.Thread(target=_check_for_updates, daemon=True).start()
-except:
-    pass
-
 # Try to import C++ extensions
 CPP_AVAILABLE = False
 try:

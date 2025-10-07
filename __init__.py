@@ -14,10 +14,16 @@ __author__ = 'Jake Cahoon'
 __email__ = 'jacobbcahoon@gmail.com'
 
 # Check for updates
+_update_check_done = False
 
 
 def _check_for_updates():
     """Check if a newer version is available on PyPI"""
+    global _update_check_done
+    if _update_check_done:
+        return
+    _update_check_done = True
+
     try:
         import urllib.request
         import json
