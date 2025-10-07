@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - '_version.py'
+      - "_version.py"
 
 jobs:
   check-version:
@@ -27,8 +27,13 @@ jobs:
 
           # Check if _version.py was modified in the last commit
           if git diff HEAD^ HEAD --name-only | grep -q "_version.py"; then
-            # Get previous version
-            PREV_VERSION=$(git show HEAD^:_version.py | grep "__version__" | sed "s/__version__ = '\([^']*\)'/\1/")
+            # Try to get previous version (may not exist if file is new)
+            if git cat-file -e HEAD^:_version.py 2>/dev/null; then
+              PREV_VERSION=$(git show HEAD^:_version.py | grep "__version__" | sed "s/__version__ = '\([^']*\)'/\1/")
+            else
+              # File is new, treat as version change
+              PREV_VERSION="none"
+            fi
 
             if [ "$CURRENT_VERSION" != "$PREV_VERSION" ]; then
               echo "Version changed from $PREV_VERSION to $CURRENT_VERSION"
@@ -58,7 +63,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: "3.10"
 
       - name: Install system dependencies
         run: |
