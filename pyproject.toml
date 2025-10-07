@@ -1,0 +1,66 @@
+[build-system]
+requires = [
+    "setuptools>=45",
+    "wheel",
+    "pybind11>=2.6.0",
+    "h5py>=3.0.0",
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ysa-signal"
+version = "1.0.1"
+description = "YSA Signal - Standalone signal analyzer for .brw/.h5 files"
+readme = "README.md"
+requires-python = ">=3.6"
+license = {text = "MIT"}
+authors = [
+    {name = "Jake Cahoon", email = "jacobbcahoon@gmail.com"}
+]
+keywords = ["signal processing", "neuroscience", "electrophysiology", "MEA", "seizure detection"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: C++",
+    "Operating System :: MacOS :: MacOS X",
+]
+dependencies = [
+    "numpy>=1.19.0",
+    "h5py>=3.0.0",
+    "pybind11>=2.6.0",
+    "matplotlib>=3.3.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=6.0.0",
+    "pytest-cov>=2.10.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/ParrishLab/ysa-signal"
+Repository = "https://github.com/ParrishLab/ysa-signal"
+Issues = "https://github.com/ParrishLab/ysa-signal/issues"
+
+[project.scripts]
+ysa-signal = "ysa_signal:main"
+
+[tool.setuptools]
+zip-safe = false
+
+[tool.setuptools.packages.find]
+include = ["ysa_signal*"]
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q"
+testpaths = ["tests"]

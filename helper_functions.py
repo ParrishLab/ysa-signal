@@ -11,16 +11,23 @@ import numpy as np
 import h5py
 from typing import Dict, Tuple, Optional, Any
 
-# Add extensions directory to path for importing C++ modules
-extensions_dir = os.path.join(os.path.dirname(__file__), 'extensions')
-sys.path.insert(0, extensions_dir)
-
+# Try to import C++ extensions
+CPP_AVAILABLE = False
 try:
+    # Try direct import (when installed via pip as py_modules)
     from sz_se_detect import processAllChannels
     CPP_AVAILABLE = True
 except ImportError:
-    CPP_AVAILABLE = False
-    print("Warning: C++ extension not available. Please run setup first.")
+    try:
+        # Fallback to local extensions directory (for development)
+        extensions_dir = os.path.join(os.path.dirname(__file__), 'extensions')
+        if os.path.isdir(extensions_dir):
+            sys.path.insert(0, extensions_dir)
+        from sz_se_detect import processAllChannels
+        CPP_AVAILABLE = True
+    except ImportError:
+        CPP_AVAILABLE = False
+        print("Warning: C++ extension not available. Please run setup first.")
 
 
 class ProcessedData:

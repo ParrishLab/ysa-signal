@@ -1,0 +1,16 @@
+include README.md
+include LICENSE
+include requirements.txt
+include requirements-dev.txt
+include pytest.ini
+include .coveragerc
+include *.pyi
+
+recursive-include extensions *.cpp *.h
+recursive-include tests *.py
+
+global-exclude *.pyc
+global-exclude *.pyo
+global-exclude __pycache__
+global-exclude *.so
+global-exclude .DS_Store
