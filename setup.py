@@ -262,17 +262,21 @@ ext_modules = [
 with open('README.md', 'r', encoding='utf-8') as f:
     long_description = f.read()
 
+# Read version from single source of truth
+version = {}
+with open('_version.py', 'r') as f:
+    exec(f.read(), version)
 
 setup(
     name='ysa-signal',
-    version='1.0.10',
+    version=version['__version__'],
     author='Jake Cahoon',
     author_email='jacobbcahoon@gmail.com',
     description='YSA Signal - Standalone signal analyzer for .brw/.h5 files',
     long_description=long_description,
     long_description_content_type='text/markdown',
     url='https://github.com/ParrishLab/ysa-signal',
-    py_modules=['ysa_signal', 'helper_functions', 'setup_wizard'],
+    py_modules=['ysa_signal', 'helper_functions', 'setup_wizard', '_version'],
     ext_modules=ext_modules,
     cmdclass={'build_ext': BuildExt},
     data_files=[('', ['ysa_signal.pyi', 'helper_functions.pyi', 'setup_wizard.pyi', 'py.typed'])],

@@ -11,7 +11,7 @@ import numpy as np
 import h5py
 from typing import Dict, Tuple, Optional, Any
 
-__version__ = '1.0.9'
+from _version import __version__
 
 # Check for updates when module is imported
 def _check_for_updates():
