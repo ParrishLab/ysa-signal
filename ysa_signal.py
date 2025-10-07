@@ -12,6 +12,38 @@ import os
 import sys
 import argparse
 
+__version__ = '1.0.9'
+
+# Check for updates when module is imported
+def _check_for_updates():
+    """Check if a newer version is available on PyPI"""
+    try:
+        import urllib.request
+        import json
+
+        # Fetch latest version from PyPI
+        url = "https://pypi.org/pypi/ysa-signal/json"
+        with urllib.request.urlopen(url, timeout=2) as response:
+            data = json.loads(response.read().decode())
+            latest_version = data['info']['version']
+
+            # Compare versions
+            if latest_version != __version__:
+                print(f"\n\033[93m┌{'─' * 50}┐", file=sys.stderr)
+                print(f"│ Update available: {__version__} → {latest_version}".ljust(51) + "│", file=sys.stderr)
+                print(f"│ Run: pip install --upgrade ysa-signal".ljust(51) + "│", file=sys.stderr)
+                print(f"└{'─' * 50}┘\033[0m\n", file=sys.stderr)
+    except:
+        # Silently fail if check fails (offline, timeout, etc.)
+        pass
+
+# Run update check in background (non-blocking)
+try:
+    import threading
+    threading.Thread(target=_check_for_updates, daemon=True).start()
+except:
+    pass
+
 # Check if C++ extensions are available
 try:
     from helper_functions import (
