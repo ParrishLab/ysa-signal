@@ -82,7 +82,7 @@ def gui_mode():
         import tkinter as tk
         from tkinter import filedialog, messagebox, ttk
     except ImportError:
-        print("Error: tkinter not available. Please install tkinter.")
+        print("Error: tkinter not available. Please install tkinter!")
         return 1
 
     if not CPP_AVAILABLE:
