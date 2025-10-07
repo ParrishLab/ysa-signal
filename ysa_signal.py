@@ -21,10 +21,10 @@ try:
         save_processed_data,
         load_processed_data,
         get_channel_data,
-        CPP_AVAILABLE,
+        cpp_available,
     )
 except ImportError:
-    CPP_AVAILABLE = False
+    cpp_available = False
     print("Error: Could not import helper_functions.")
     print("Please run the setup wizard first: python setup_wizard.py")
     sys.exit(1)
@@ -43,7 +43,7 @@ def cli_mode(input_file: str, output_file: str, do_analysis: bool = False):
     print("YSA Signal - CLI Mode")
     print("=" * 70)
 
-    if not CPP_AVAILABLE:
+    if not cpp_available:
         print("\nError: C++ extensions not available.")
         print("Please run the setup wizard: python setup_wizard.py")
         return 1
@@ -87,7 +87,7 @@ def gui_mode():
         print("Error: tkinter not available. Please install tkinter!")
         return 1
 
-    if not CPP_AVAILABLE:
+    if not cpp_available:
         root = tk.Tk()
         root.withdraw()
         messagebox.showerror(

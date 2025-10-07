@@ -4,7 +4,8 @@ from typing import Tuple, List, Dict, Any, Optional
 import numpy as np
 
 # Flag indicating if C++ extensions are available
-CPP_AVAILABLE: bool
+cpp_available: bool
+
 
 class ProcessedData:
     """Container for processed signal data"""
@@ -28,6 +29,7 @@ class ProcessedData:
         original_metadata: Dict[str, Any]
     ) -> None: ...
 
+
 def process_and_store(
     input_file: str,
     do_analysis: bool = False
@@ -48,6 +50,7 @@ def process_and_store(
     """
     ...
 
+
 def save_processed_data(
     processed_data: ProcessedData,
     output_file: str
@@ -64,6 +67,7 @@ def save_processed_data(
     """
     ...
 
+
 def load_processed_data(input_file: str) -> ProcessedData:
     """
     Load processed data from HDF5 file.
@@ -79,6 +83,7 @@ def load_processed_data(input_file: str) -> ProcessedData:
         IOError: If file cannot be read
     """
     ...
+
 
 def get_channel_data(
     processed_data: ProcessedData,
