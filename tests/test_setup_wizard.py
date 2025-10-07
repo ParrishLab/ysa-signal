@@ -86,18 +86,27 @@ class TestCheckMacOSVersion(unittest.TestCase):
 
     @patch('sys.platform', 'darwin')
     @patch('platform.mac_ver')
-    def test_macos_11_incompatible(self, mock_mac_ver):
-        """Test that macOS 11 fails the check"""
+    def test_macos_11_compatible(self, mock_mac_ver):
+        """Test that macOS 11 passes the check"""
         mock_mac_ver.return_value = ('11.7.0', ('', '', ''), '')
 
         result = check_macos_version()
-        self.assertFalse(result)
+        self.assertTrue(result)
 
     @patch('sys.platform', 'darwin')
     @patch('platform.mac_ver')
-    def test_macos_10_incompatible(self, mock_mac_ver):
-        """Test that macOS 10 fails the check"""
+    def test_macos_10_compatible(self, mock_mac_ver):
+        """Test that macOS 10 passes the check"""
         mock_mac_ver.return_value = ('10.15.7', ('', '', ''), '')
+
+        result = check_macos_version()
+        self.assertTrue(result)
+
+    @patch('sys.platform', 'darwin')
+    @patch('platform.mac_ver')
+    def test_macos_9_incompatible(self, mock_mac_ver):
+        """Test that macOS 9 and below fails the check"""
+        mock_mac_ver.return_value = ('9.2.2', ('', '', ''), '')
 
         result = check_macos_version()
         self.assertFalse(result)
