@@ -11,8 +11,6 @@ import numpy as np
 import h5py
 from typing import Dict, Tuple, Optional, Any
 
-from _version import __version__
-
 # Try to import C++ extensions
 cpp_available = False
 try:
