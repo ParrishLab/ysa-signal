@@ -7,7 +7,7 @@ Supports both CLI and GUI modes.
 Developer: Jake Cahoon
 """
 
-__version__ = '1.0.3'
+__version__ = '1.0.4'
 __author__ = 'Jake Cahoon'
 __email__ = 'jacobbcahoon@gmail.com'
 
