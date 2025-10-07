@@ -14,6 +14,7 @@ pip install ysa-signal
 
 ### GUI Mode
 
+To run the GUI, just run this command after installation:
 ```bash
 ysa-signal
 ```
