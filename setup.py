@@ -188,4 +188,6 @@ else:
 setup(
     ext_modules=ext_modules,
     cmdclass={'build_ext': build_ext},
+    py_modules=['ysa_signal', 'helper_functions', 'setup_wizard', '_version'],
+    package_data={'': ['*.pyi', 'py.typed']},
 )
