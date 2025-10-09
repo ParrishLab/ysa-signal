@@ -146,23 +146,23 @@ jobs:
 
           test_file = 'test_data/test_recording.brw'
           if os.path.exists(test_file):
-              print(f'✓ Found test file: {test_file}')
+              print(f'[OK] Found test file: {test_file}')
 
               # Test 1: Process and store (with analysis)
               print('Running process_and_store with analysis...')
               processed_data = process_and_store(test_file, do_analysis=True)
-              print(f'✓ Processing complete')
+              print(f'[OK] Processing complete')
 
               # Validate processed data
               assert processed_data.sampling_rate is not None, 'Sampling rate is None'
               assert processed_data.sampling_rate > 0, f'Invalid sampling rate: {processed_data.sampling_rate}'
-              print(f'✓ Sampling rate: {processed_data.sampling_rate} Hz')
+              print(f'[OK] Sampling rate: {processed_data.sampling_rate} Hz')
 
               assert len(processed_data.active_channels) > 0, 'No active channels found'
-              print(f'✓ Active channels: {len(processed_data.active_channels)}')
+              print(f'[OK] Active channels: {len(processed_data.active_channels)}')
 
               assert processed_data.data.shape == (64, 64), f'Invalid data shape: {processed_data.data.shape}'
-              print(f'✓ Data array shape: {processed_data.data.shape}')
+              print(f'[OK] Data array shape: {processed_data.data.shape}')
 
               # Test 2: Save processed data
               with tempfile.NamedTemporaryFile(suffix='_processed.h5', delete=False) as tmp:
@@ -171,17 +171,17 @@ jobs:
               print(f'Saving to {output_file}...')
               save_processed_data(processed_data, output_file)
               assert os.path.exists(output_file), 'Output file was not created'
-              print(f'✓ Saved successfully')
+              print(f'[OK] Saved successfully')
 
               # Test 3: Load processed data
               print('Loading processed data...')
               loaded_data = load_processed_data(output_file)
-              print(f'✓ Loaded successfully')
+              print(f'[OK] Loaded successfully')
 
               # Validate loaded data
               assert loaded_data.sampling_rate == processed_data.sampling_rate, 'Sampling rates do not match'
               assert len(loaded_data.active_channels) == len(processed_data.active_channels), 'Active channel counts do not match'
-              print(f'✓ Data integrity verified')
+              print(f'[OK] Data integrity verified')
 
               # Test 4: Access channel data (if channels exist)
               if len(loaded_data.active_channels) > 0:
@@ -192,31 +192,41 @@ jobs:
                   assert 'signal' in channel_data, 'Signal data missing'
                   assert len(channel_data['signal']) > 0, 'Signal is empty'
                   signal_len = len(channel_data['signal'])
-                  print(f'✓ Channel ({row}, {col}) signal length: {signal_len}')
+                  print(f'[OK] Channel ({row}, {col}) signal length: {signal_len}')
 
                   # Check analysis results
                   assert 'SzTimes' in channel_data, 'SzTimes missing'
                   assert 'DischargeTimes' in channel_data, 'DischargeTimes missing'
                   assert 'SETimes' in channel_data, 'SETimes missing'
-                  print(f'✓ Analysis results present')
+                  print(f'[OK] Analysis results present')
 
               # Cleanup
               os.unlink(output_file)
 
-              print('✅ All integration tests passed!')
+              print('[PASS] All integration tests passed!')
           else:
               print('Test file not found, skipping')
           "@
 
       - name: Report success
         if: success()
+        shell: bash
         run: |
-          echo "✅ Integration test passed on ${{ matrix.os }}"
+          if [ "${{ runner.os }}" == "Windows" ]; then
+            echo "[PASS] Integration test passed on ${{ matrix.os }}"
+          else
+            echo "✅ Integration test passed on ${{ matrix.os }}"
+          fi
 
       - name: Report failure
         if: failure()
+        shell: bash
         run: |
-          echo "❌ Integration test failed on ${{ matrix.os }}"
+          if [ "${{ runner.os }}" == "Windows" ]; then
+            echo "[FAIL] Integration test failed on ${{ matrix.os }}"
+          else
+            echo "❌ Integration test failed on ${{ matrix.os }}"
+          fi
           exit 1
 
   update-status:
