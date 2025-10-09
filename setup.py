@@ -211,16 +211,28 @@ class BuildExt(build_ext):
 
     def build_extensions(self):
         # Determine compilation flags based on platform
-        extra_compile_args = ['-std=c++17', '-O3']
-        extra_link_args = []
+        if sys.platform == 'win32':
+            # MSVC compiler flags
+            extra_compile_args = ['/std:c++17', '/O2', '/EHsc']
+            extra_link_args = []
+        else:
+            # GCC/Clang compiler flags (macOS/Linux)
+            extra_compile_args = ['-std=c++17', '-O3']
+            extra_link_args = []
 
-        # Universal binary for macOS
-        if sys.platform == 'darwin':
-            extra_compile_args.extend(['-arch', 'arm64', '-arch', 'x86_64'])
-            extra_link_args.extend(['-arch', 'arm64', '-arch', 'x86_64'])
+            # Universal binary for macOS
+            if sys.platform == 'darwin':
+                extra_compile_args.extend(['-arch', 'arm64', '-arch', 'x86_64'])
+                extra_link_args.extend(['-arch', 'arm64', '-arch', 'x86_64'])
 
         # Add flags to all extensions
         for ext in self.extensions:
+            # Clear any existing incompatible flags
+            if sys.platform == 'win32':
+                # Remove GCC-style flags that might have been added
+                ext.extra_compile_args = [arg for arg in ext.extra_compile_args
+                                          if not arg.startswith('-std=') and not arg.startswith('-O')]
+
             ext.extra_compile_args.extend(extra_compile_args)
             ext.extra_link_args.extend(extra_link_args)
 
@@ -249,6 +261,16 @@ if sys.platform == 'win32':
 else:
     sz_se_detect_source = 'extensions/sz_se_detect.cpp'
 
+# Platform-specific compiler/linker flags
+if sys.platform == 'win32':
+    # MSVC uses /I for include paths and /LIBPATH: for library paths
+    compile_flags = [f"/I{hdf5_paths['include_dir']}"]
+    link_flags = [f"/LIBPATH:{hdf5_paths['library_dir']}"]
+else:
+    # GCC/Clang use -I and -L
+    compile_flags = [f"-I{hdf5_paths['include_dir']}"]
+    link_flags = [f"-L{hdf5_paths['library_dir']}"]
+
 ext_modules = [
     Extension(
         'sz_se_detect',
@@ -259,8 +281,8 @@ ext_modules = [
         ],
         library_dirs=[hdf5_paths['library_dir']],
         libraries=hdf5_paths['libraries'],
-        extra_compile_args=[f"-I{hdf5_paths['include_dir']}"],
-        extra_link_args=[f"-L{hdf5_paths['library_dir']}"],
+        extra_compile_args=compile_flags,
+        extra_link_args=link_flags,
         language='c++',
     ),
     Extension(
