@@ -57,13 +57,9 @@ ysa-signal = "ysa_signal:main"
 
 [tool.setuptools]
 zip-safe = false
-py-modules = ["ysa_signal", "helper_functions", "setup_wizard", "_version"]
 
 [tool.setuptools.dynamic]
 version = {attr = "_version.__version__"}
-
-[tool.setuptools.package-data]
-"" = ["*.pyi", "py.typed"]
 
 [tool.pytest.ini_options]
 minversion = "6.0"
