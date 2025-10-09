@@ -118,7 +118,8 @@ jobs:
 
                   assert 'signal' in channel_data, 'Signal data missing'
                   assert len(channel_data['signal']) > 0, 'Signal is empty'
-                  print(f'✓ Channel ({row}, {col}) signal length: {len(channel_data[\"signal\"])}')
+                  signal_len = len(channel_data['signal'])
+                  print(f'✓ Channel ({row}, {col}) signal length: {signal_len}')
 
                   # Check analysis results
                   assert 'SzTimes' in channel_data, 'SzTimes missing'
@@ -190,7 +191,8 @@ jobs:
 
                   assert 'signal' in channel_data, 'Signal data missing'
                   assert len(channel_data['signal']) > 0, 'Signal is empty'
-                  print(f'✓ Channel ({row}, {col}) signal length: {len(channel_data[\"signal\"])}')
+                  signal_len = len(channel_data['signal'])
+                  print(f'✓ Channel ({row}, {col}) signal length: {signal_len}')
 
                   # Check analysis results
                   assert 'SzTimes' in channel_data, 'SzTimes missing'
