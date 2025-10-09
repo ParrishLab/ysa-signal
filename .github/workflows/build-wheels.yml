@@ -1,0 +1,333 @@
+name: Build and Release Wheels
+
+permissions:
+  contents: write
+  id-token: write
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "_version.py"
+  workflow_dispatch:
+
+jobs:
+  check-version:
+    runs-on: ubuntu-latest
+    outputs:
+      should_release: ${{ steps.check.outputs.should_release }}
+      version: ${{ steps.check.outputs.version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Check if version changed
+        id: check
+        run: |
+          # Get current version
+          CURRENT_VERSION=$(grep "__version__" _version.py | sed "s/__version__ = '\([^']*\)'/\1/")
+          echo "version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+
+          # Check if _version.py was modified in the last commit
+          if git diff HEAD^ HEAD --name-only | grep -q "_version.py"; then
+            # Try to get previous version (may not exist if file is new)
+            if git cat-file -e HEAD^:_version.py 2>/dev/null; then
+              PREV_VERSION=$(git show HEAD^:_version.py | grep "__version__" | sed "s/__version__ = '\([^']*\)'/\1/")
+            else
+              # File is new, treat as version change
+              PREV_VERSION="none"
+            fi
+
+            if [ "$CURRENT_VERSION" != "$PREV_VERSION" ]; then
+              echo "Version changed from $PREV_VERSION to $CURRENT_VERSION"
+              echo "should_release=true" >> $GITHUB_OUTPUT
+            else
+              echo "Version file changed but version number unchanged"
+              echo "should_release=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "Version file not changed in last commit"
+            echo "should_release=false" >> $GITHUB_OUTPUT
+          fi
+
+  build-macos:
+    needs: check-version
+    if: needs.check-version.outputs.should_release == 'true'
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        arch: [x86_64, arm64]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install system dependencies (arm64)
+        if: matrix.arch == 'arm64'
+        run: |
+          brew update
+          brew install hdf5 pybind11
+
+      - name: Install system dependencies (x86_64)
+        if: matrix.arch == 'x86_64'
+        run: |
+          sudo /usr/sbin/softwareupdate --install-rosetta --agree-to-license
+          if [ ! -x /usr/local/bin/brew ]; then
+            arch -x86_64 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+          fi
+          arch -x86_64 /usr/local/bin/brew update
+          arch -x86_64 /usr/local/bin/brew install hdf5 pybind11
+
+      - name: Install Python dependencies (arm64)
+        if: matrix.arch == 'arm64'
+        run: |
+          python -m pip install --upgrade pip
+          pip install build wheel setuptools numpy h5py pybind11
+
+      - name: Install Python dependencies (x86_64)
+        if: matrix.arch == 'x86_64'
+        run: |
+          arch -x86_64 python3 -m pip install --upgrade pip
+          arch -x86_64 python3 -m pip install build wheel setuptools numpy h5py pybind11
+
+      - name: Build C++ extensions (arm64)
+        if: matrix.arch == 'arm64'
+        run: |
+          cd extensions
+          ARCHFLAGS="-arch arm64" python setup.py build_ext --inplace
+          cd ..
+
+      - name: Build C++ extensions (x86_64)
+        if: matrix.arch == 'x86_64'
+        run: |
+          cd extensions
+          ARCHFLAGS="-arch x86_64" arch -x86_64 python3 setup.py build_ext --inplace
+          cd ..
+
+      - name: Build wheel (arm64)
+        if: matrix.arch == 'arm64'
+        env:
+          ARCHFLAGS: "-arch arm64"
+        run: |
+          python -m build --wheel
+
+      - name: Build wheel (x86_64)
+        if: matrix.arch == 'x86_64'
+        env:
+          ARCHFLAGS: "-arch x86_64"
+        run: |
+          arch -x86_64 python3 -m build --wheel
+
+      - name: Upload wheel
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheel-macos-${{ matrix.arch }}
+          path: dist/*.whl
+          retention-days: 7
+
+  build-windows:
+    needs: check-version
+    if: needs.check-version.outputs.should_release == 'true'
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Setup Visual Studio Developer Command Prompt
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Download HDF5
+        shell: pwsh
+        run: |
+          Invoke-WebRequest -Uri "https://github.com/HDFGroup/hdf5/releases/download/hdf5_1.14.5/hdf5-1.14.5-win-vs2022_cl.zip" -OutFile "hdf5.zip"
+          7z x hdf5.zip
+          $hdf5Dir = Get-ChildItem -Directory | Where-Object { $_.Name -like "hdf5*" } | Select-Object -First 1
+          Write-Host "Found HDF5 directory: $($hdf5Dir.Name)"
+          New-Item -ItemType Directory -Force -Path "${{ github.workspace }}/HDF5-1.14.5-win64"
+          Move-Item -Path "$($hdf5Dir.FullName)/*" -Destination "${{ github.workspace }}/HDF5-1.14.5-win64/"
+
+      - name: Extract HDF5
+        shell: pwsh
+        run: |
+          Push-Location "${{ github.workspace }}/HDF5-1.14.5-win64"
+          7z x HDF5-1.14.5-win64.zip
+          Remove-Item -Path * -Exclude "HDF5-1.14.5-win64" -Force
+          Move-Item -Path "HDF5-1.14.5-win64/*" -Destination "./"
+          Remove-Item -Path "HDF5-1.14.5-win64" -Recurse -Force
+          Pop-Location
+          Write-Host "HDF5 setup complete"
+          Get-ChildItem "${{ github.workspace }}/HDF5-1.14.5-win64"
+
+      - name: Setup Environment
+        shell: pwsh
+        run: |
+          echo "${{ github.workspace }}/HDF5-1.14.5-win64/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          echo "GITHUB_WORKSPACE=${{ github.workspace }}" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Install Python dependencies
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          pip install build wheel setuptools numpy h5py pybind11
+
+      - name: Build C++ extensions
+        shell: pwsh
+        run: |
+          cd extensions
+          python win_setup.py build_ext --inplace
+          Get-ChildItem *.pyd
+          cd ..
+
+      - name: Build wheel
+        shell: pwsh
+        run: |
+          python -m build --wheel
+
+      - name: Upload wheel
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheel-windows
+          path: dist/*.whl
+          retention-days: 7
+
+  build-linux:
+    needs: check-version
+    if: needs.check-version.outputs.should_release == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libhdf5-dev
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install build wheel setuptools numpy h5py pybind11
+
+      - name: Build C++ extensions
+        run: |
+          cd extensions
+          python setup.py build_ext --inplace
+          cd ..
+
+      - name: Build wheel
+        run: |
+          python -m build --wheel
+
+      - name: Upload wheel
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheel-linux
+          path: dist/*.whl
+          retention-days: 7
+
+  build-sdist:
+    needs: check-version
+    if: needs.check-version.outputs.should_release == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install build
+
+      - name: Build source distribution
+        run: python -m build --sdist
+
+      - name: Upload sdist
+        uses: actions/upload-artifact@v4
+        with:
+          name: sdist
+          path: dist/*.tar.gz
+          retention-days: 7
+
+  publish:
+    needs: [check-version, build-macos, build-windows, build-linux, build-sdist]
+    if: needs.check-version.outputs.should_release == 'true'
+    runs-on: ubuntu-latest
+    environment: release
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist-all
+
+      - name: Consolidate distributions
+        run: |
+          mkdir -p dist
+          find dist-all -name '*.whl' -exec cp {} dist/ \;
+          find dist-all -name '*.tar.gz' -exec cp {} dist/ \;
+          ls -lh dist/
+
+      - name: Check distributions
+        run: |
+          python -m pip install --upgrade pip
+          pip install twine
+          twine check dist/*
+
+      - name: Publish to PyPI
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: twine upload dist/*
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ needs.check-version.outputs.version }}
+          name: Release v${{ needs.check-version.outputs.version }}
+          body: |
+            Release version ${{ needs.check-version.outputs.version }}
+
+            ## Installation
+
+            ```bash
+            pip install --upgrade ysa-signal
+            ```
+
+            ## Platform Support
+
+            - macOS (Intel & Apple Silicon)
+            - Windows (x64)
+            - Linux (x86_64)
+          files: dist/*
+          draft: false
+          prerelease: false
