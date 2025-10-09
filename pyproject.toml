@@ -32,6 +32,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: C++",
     "Operating System :: MacOS :: MacOS X",
+    "Operating System :: Microsoft :: Windows",
 ]
 dependencies = [
     "numpy>=1.19.0",
@@ -56,12 +57,13 @@ ysa-signal = "ysa_signal:main"
 
 [tool.setuptools]
 zip-safe = false
+py-modules = ["ysa_signal", "helper_functions", "setup_wizard", "_version"]
 
 [tool.setuptools.dynamic]
 version = {attr = "_version.__version__"}
 
-[tool.setuptools.packages.find]
-include = ["ysa_signal*"]
+[tool.setuptools.package-data]
+"" = ["*.pyi", "py.typed"]
 
 [tool.pytest.ini_options]
 minversion = "6.0"
