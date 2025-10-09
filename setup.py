@@ -161,6 +161,10 @@ def get_system_hdf5_paths():
             '/opt/homebrew/lib',
             '/usr/local/lib',
         ]
+    elif sys.platform == 'win32':
+        # Windows - shouldn't reach here if HDF5_DIR is set
+        inc_paths = []
+        lib_paths = []
     else:  # Linux
         inc_paths = [
             '/usr/include/hdf5/serial',
@@ -185,14 +189,21 @@ def get_system_hdf5_paths():
             'libraries': ['hdf5_cpp', 'hdf5'],
         }
 
-    raise RuntimeError(
-        "Could not find HDF5 installation. "
-        "Please install h5py (which includes HDF5): pip install h5py\n"
-        "Or install HDF5 separately:\n"
-        "  - macOS: brew install hdf5\n"
-        "  - Linux: sudo apt-get install libhdf5-dev\n"
-        "  - conda: conda install -c conda-forge hdf5"
-    )
+    error_msg = "Could not find HDF5 installation. "
+    if sys.platform == 'win32':
+        error_msg += (
+            "On Windows, set HDF5_DIR environment variable.\n"
+            "Or install h5py which bundles HDF5: pip install h5py"
+        )
+    else:
+        error_msg += (
+            "Please install h5py (which includes HDF5): pip install h5py\n"
+            "Or install HDF5 separately:\n"
+            "  - macOS: brew install hdf5\n"
+            "  - Linux: sudo apt-get install libhdf5-dev\n"
+            "  - conda: conda install -c conda-forge hdf5"
+        )
+    raise RuntimeError(error_msg)
 
 
 class BuildExt(build_ext):
@@ -232,11 +243,16 @@ print(f"  Include: {hdf5_paths['include_dir']}")
 print(f"  Library: {hdf5_paths['library_dir']}")
 print("=" * 70)
 
+# Choose correct source file based on platform
+if sys.platform == 'win32':
+    sz_se_detect_source = 'extensions/sz_se_detect_win.cpp'
+else:
+    sz_se_detect_source = 'extensions/sz_se_detect.cpp'
 
 ext_modules = [
     Extension(
         'sz_se_detect',
-        sources=['extensions/sz_se_detect.cpp'],
+        sources=[sz_se_detect_source],
         include_dirs=[
             get_pybind_include(),
             hdf5_paths['include_dir'],
@@ -306,6 +322,7 @@ setup(
         'Programming Language :: Python :: 3.11',
         'Programming Language :: C++',
         'Operating System :: MacOS :: MacOS X',
+        'Operating System :: Microsoft :: Windows',
     ],
     keywords='signal processing, neuroscience, electrophysiology, MEA, seizure detection',
     zip_safe=False,
