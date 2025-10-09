@@ -1,8 +1,13 @@
 # YSA Signal
 
+[![Post-Release Integration Test](https://github.com/ParrishLab/ysa-signal/actions/workflows/post-release-test.yml/badge.svg)](https://github.com/ParrishLab/ysa-signal/actions/workflows/post-release-test.yml)
+[![PyPI version](https://badge.fury.io/py/ysa-signal.svg)](https://badge.fury.io/py/ysa-signal)
+
 **Standalone signal analyzer for downsampled .brw files**
 
-YSA Signal processes MEA recordings from downsampled .brw files, detects seizures and status epilepticus events, and saves the results in a compact HDF5 format. Mac only for now.
+YSA Signal processes MEA recordings from downsampled .brw files, detects seizures and status epilepticus events, and saves the results in a compact HDF5 format.
+
+**Supported Platforms**: macOS (Intel & Apple Silicon) • Windows (x64)
 
 ## Installation
 

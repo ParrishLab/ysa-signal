@@ -1,0 +1,224 @@
+name: Post-Release Integration Test
+
+on:
+  workflow_run:
+    workflows: ["Build and Release Wheels"]
+    types:
+      - completed
+    branches: [main]
+
+jobs:
+  wait-for-pypi:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for PyPI propagation
+        run: |
+          echo "Waiting 3 minutes for PyPI to propagate the new release..."
+          sleep 180
+
+  integration-test:
+    needs: wait-for-pypi
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+
+    steps:
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install ysa-signal from PyPI
+        run: |
+          python -m pip install --upgrade pip
+          pip install ysa-signal --no-cache-dir
+
+      - name: Verify installation
+        run: |
+          python -c "import ysa_signal; print(f'ysa-signal version: {ysa_signal.__version__}')"
+          python -c "import sz_se_detect; print('sz_se_detect imported successfully')"
+          python -c "import signal_analyzer; print('signal_analyzer imported successfully')"
+
+      - name: Download test .brw file
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Download the test file from the latest release tagged as 'test-data'
+          gh release download test-data \
+            --repo ${{ github.repository }} \
+            --pattern "test_recording.brw" \
+            --dir ./test_data || echo "Test data release not found, will skip file test"
+
+      - name: Run integration test (macOS)
+        if: runner.os == 'macOS' && hashFiles('test_data/test_recording.brw') != ''
+        run: |
+          python -c "
+          from ysa_signal import process_and_store, save_processed_data, load_processed_data
+          import os
+          import tempfile
+
+          test_file = 'test_data/test_recording.brw'
+          if os.path.exists(test_file):
+              print(f'✓ Found test file: {test_file}')
+
+              # Test 1: Process and store (with analysis)
+              print('Running process_and_store with analysis...')
+              processed_data = process_and_store(test_file, do_analysis=True)
+              print(f'✓ Processing complete')
+
+              # Validate processed data
+              assert processed_data.sampling_rate is not None, 'Sampling rate is None'
+              assert processed_data.sampling_rate > 0, f'Invalid sampling rate: {processed_data.sampling_rate}'
+              print(f'✓ Sampling rate: {processed_data.sampling_rate} Hz')
+
+              assert len(processed_data.active_channels) > 0, 'No active channels found'
+              print(f'✓ Active channels: {len(processed_data.active_channels)}')
+
+              assert processed_data.data.shape == (64, 64), f'Invalid data shape: {processed_data.data.shape}'
+              print(f'✓ Data array shape: {processed_data.data.shape}')
+
+              # Test 2: Save processed data
+              with tempfile.NamedTemporaryFile(suffix='_processed.h5', delete=False) as tmp:
+                  output_file = tmp.name
+
+              print(f'Saving to {output_file}...')
+              save_processed_data(processed_data, output_file)
+              assert os.path.exists(output_file), 'Output file was not created'
+              print(f'✓ Saved successfully')
+
+              # Test 3: Load processed data
+              print('Loading processed data...')
+              loaded_data = load_processed_data(output_file)
+              print(f'✓ Loaded successfully')
+
+              # Validate loaded data
+              assert loaded_data.sampling_rate == processed_data.sampling_rate, 'Sampling rates do not match'
+              assert len(loaded_data.active_channels) == len(processed_data.active_channels), 'Active channel counts do not match'
+              print(f'✓ Data integrity verified')
+
+              # Test 4: Access channel data (if channels exist)
+              if len(loaded_data.active_channels) > 0:
+                  row = loaded_data.active_channels[0][0]
+                  col = loaded_data.active_channels[0][1]
+                  channel_data = loaded_data.data[row - 1, col - 1]
+
+                  assert 'signal' in channel_data, 'Signal data missing'
+                  assert len(channel_data['signal']) > 0, 'Signal is empty'
+                  print(f'✓ Channel ({row}, {col}) signal length: {len(channel_data[\"signal\"])}')
+
+                  # Check analysis results
+                  assert 'SzTimes' in channel_data, 'SzTimes missing'
+                  assert 'DischargeTimes' in channel_data, 'DischargeTimes missing'
+                  assert 'SETimes' in channel_data, 'SETimes missing'
+                  print(f'✓ Analysis results present')
+
+              # Cleanup
+              os.unlink(output_file)
+
+              print('✅ All integration tests passed!')
+          else:
+              print('Test file not found, skipping')
+          "
+
+      - name: Run integration test (Windows)
+        if: runner.os == 'Windows' && hashFiles('test_data/test_recording.brw') != ''
+        shell: pwsh
+        run: |
+          python -c @"
+          from ysa_signal import process_and_store, save_processed_data, load_processed_data
+          import os
+          import tempfile
+
+          test_file = 'test_data/test_recording.brw'
+          if os.path.exists(test_file):
+              print(f'✓ Found test file: {test_file}')
+
+              # Test 1: Process and store (with analysis)
+              print('Running process_and_store with analysis...')
+              processed_data = process_and_store(test_file, do_analysis=True)
+              print(f'✓ Processing complete')
+
+              # Validate processed data
+              assert processed_data.sampling_rate is not None, 'Sampling rate is None'
+              assert processed_data.sampling_rate > 0, f'Invalid sampling rate: {processed_data.sampling_rate}'
+              print(f'✓ Sampling rate: {processed_data.sampling_rate} Hz')
+
+              assert len(processed_data.active_channels) > 0, 'No active channels found'
+              print(f'✓ Active channels: {len(processed_data.active_channels)}')
+
+              assert processed_data.data.shape == (64, 64), f'Invalid data shape: {processed_data.data.shape}'
+              print(f'✓ Data array shape: {processed_data.data.shape}')
+
+              # Test 2: Save processed data
+              with tempfile.NamedTemporaryFile(suffix='_processed.h5', delete=False) as tmp:
+                  output_file = tmp.name
+
+              print(f'Saving to {output_file}...')
+              save_processed_data(processed_data, output_file)
+              assert os.path.exists(output_file), 'Output file was not created'
+              print(f'✓ Saved successfully')
+
+              # Test 3: Load processed data
+              print('Loading processed data...')
+              loaded_data = load_processed_data(output_file)
+              print(f'✓ Loaded successfully')
+
+              # Validate loaded data
+              assert loaded_data.sampling_rate == processed_data.sampling_rate, 'Sampling rates do not match'
+              assert len(loaded_data.active_channels) == len(processed_data.active_channels), 'Active channel counts do not match'
+              print(f'✓ Data integrity verified')
+
+              # Test 4: Access channel data (if channels exist)
+              if len(loaded_data.active_channels) > 0:
+                  row = loaded_data.active_channels[0][0]
+                  col = loaded_data.active_channels[0][1]
+                  channel_data = loaded_data.data[row - 1, col - 1]
+
+                  assert 'signal' in channel_data, 'Signal data missing'
+                  assert len(channel_data['signal']) > 0, 'Signal is empty'
+                  print(f'✓ Channel ({row}, {col}) signal length: {len(channel_data[\"signal\"])}')
+
+                  # Check analysis results
+                  assert 'SzTimes' in channel_data, 'SzTimes missing'
+                  assert 'DischargeTimes' in channel_data, 'DischargeTimes missing'
+                  assert 'SETimes' in channel_data, 'SETimes missing'
+                  print(f'✓ Analysis results present')
+
+              # Cleanup
+              os.unlink(output_file)
+
+              print('✅ All integration tests passed!')
+          else:
+              print('Test file not found, skipping')
+          "@
+
+      - name: Report success
+        if: success()
+        run: |
+          echo "✅ Integration test passed on ${{ matrix.os }}"
+
+      - name: Report failure
+        if: failure()
+        run: |
+          echo "❌ Integration test failed on ${{ matrix.os }}"
+          exit 1
+
+  update-status:
+    needs: integration-test
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create status badge
+        run: |
+          if [ "${{ needs.integration-test.result }}" == "success" ]; then
+            echo "Integration tests passed"
+          else
+            echo "Integration tests failed"
+            exit 1
+          fi
