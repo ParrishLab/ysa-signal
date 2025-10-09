@@ -5,12 +5,14 @@ include requirements-dev.txt
 include pytest.ini
 include .coveragerc
 include *.pyi
+include _version.py
 
-recursive-include extensions *.cpp *.h
+recursive-include extensions *.cpp *.h *.py
 recursive-include tests *.py
 
 global-exclude *.pyc
 global-exclude *.pyo
 global-exclude __pycache__
 global-exclude *.so
+global-exclude *.pyd
 global-exclude .DS_Store
