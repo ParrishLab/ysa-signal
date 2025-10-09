@@ -57,6 +57,7 @@ ysa-signal = "ysa_signal:main"
 
 [tool.setuptools]
 zip-safe = false
+license-files = []
 
 [tool.setuptools.dynamic]
 version = {attr = "_version.__version__"}
