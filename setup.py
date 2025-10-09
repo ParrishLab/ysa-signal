@@ -103,17 +103,6 @@ def get_hdf5_paths():
     raise RuntimeError(error_msg)
 
 
-# Get HDF5 paths
-print("=" * 70)
-print("Detecting HDF5 installation...")
-print("=" * 70)
-hdf5_paths = get_hdf5_paths()
-print("=" * 70)
-print(f"Using HDF5:")
-print(f"  Include: {hdf5_paths['include_dir']}")
-print(f"  Library: {hdf5_paths['library_dir']}")
-print("=" * 70)
-
 # Choose correct source file based on platform
 if sys.platform == 'win32':
     sz_se_detect_source = 'extensions/sz_se_detect_win.cpp'
@@ -138,27 +127,61 @@ else:
         extra_compile_flags.extend(['-arch', 'arm64', '-arch', 'x86_64'])
         extra_link_flags.extend(['-arch', 'arm64', '-arch', 'x86_64'])
 
-ext_modules = [
-    Pybind11Extension(
-        'sz_se_detect',
-        [sz_se_detect_source],
-        include_dirs=[
-            pybind11.get_include(),
-            hdf5_paths['include_dir'],
-        ],
-        library_dirs=[hdf5_paths['library_dir']],
-        libraries=hdf5_paths['libraries'],
-        extra_compile_args=extra_compile_flags + [f"-I{hdf5_paths['include_dir']}"] if sys.platform != 'win32' else extra_compile_flags + [f"/I{hdf5_paths['include_dir']}"],
-        extra_link_args=extra_link_flags + hdf5_paths.get('extra_link_args', []) + ([f"-L{hdf5_paths['library_dir']}"] if sys.platform != 'win32' else [f"/LIBPATH:{hdf5_paths['library_dir']}"]),
-    ),
-    Pybind11Extension(
-        'signal_analyzer',
-        ['extensions/signal_analyzer.cpp'],
-        include_dirs=[pybind11.get_include()],
-        extra_compile_args=extra_compile_flags,
-        extra_link_args=extra_link_flags,
-    ),
-]
+# Only detect HDF5 when building wheels (not sdist)
+# Check if we're in a build command that needs compilation
+building_extension = any(arg in sys.argv for arg in ['build_ext', 'bdist_wheel', 'install', 'develop'])
+
+if building_extension:
+    print("=" * 70)
+    print("Detecting HDF5 installation...")
+    print("=" * 70)
+    hdf5_paths = get_hdf5_paths()
+    print("=" * 70)
+    print(f"Using HDF5:")
+    print(f"  Include: {hdf5_paths['include_dir']}")
+    print(f"  Library: {hdf5_paths['library_dir']}")
+    print("=" * 70)
+
+    ext_modules = [
+        Pybind11Extension(
+            'sz_se_detect',
+            [sz_se_detect_source],
+            include_dirs=[
+                pybind11.get_include(),
+                hdf5_paths['include_dir'],
+            ],
+            library_dirs=[hdf5_paths['library_dir']],
+            libraries=hdf5_paths['libraries'],
+            extra_compile_args=extra_compile_flags + [f"-I{hdf5_paths['include_dir']}"] if sys.platform != 'win32' else extra_compile_flags + [f"/I{hdf5_paths['include_dir']}"],
+            extra_link_args=extra_link_flags + hdf5_paths.get('extra_link_args', []) + ([f"-L{hdf5_paths['library_dir']}"] if sys.platform != 'win32' else [f"/LIBPATH:{hdf5_paths['library_dir']}"]),
+        ),
+        Pybind11Extension(
+            'signal_analyzer',
+            ['extensions/signal_analyzer.cpp'],
+            include_dirs=[pybind11.get_include()],
+            extra_compile_args=extra_compile_flags,
+            extra_link_args=extra_link_flags,
+        ),
+    ]
+else:
+    # For sdist, just define extensions without HDF5 paths
+    # They won't be compiled during sdist build
+    ext_modules = [
+        Pybind11Extension(
+            'sz_se_detect',
+            [sz_se_detect_source],
+            include_dirs=[pybind11.get_include()],
+            extra_compile_args=extra_compile_flags,
+            extra_link_args=extra_link_flags,
+        ),
+        Pybind11Extension(
+            'signal_analyzer',
+            ['extensions/signal_analyzer.cpp'],
+            include_dirs=[pybind11.get_include()],
+            extra_compile_args=extra_compile_flags,
+            extra_link_args=extra_link_flags,
+        ),
+    ]
 
 
 # Read the long description from README
