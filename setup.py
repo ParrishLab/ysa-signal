@@ -213,7 +213,8 @@ class BuildExt(build_ext):
         # Determine compilation flags based on platform
         if sys.platform == 'win32':
             # MSVC compiler flags
-            extra_compile_args = ['/std:c++17', '/O2', '/EHsc']
+            # /DH5_BUILT_AS_DYNAMIC_LIB is critical for HDF5 dynamic linking on Windows
+            extra_compile_args = ['/std:c++17', '/O2', '/EHsc', '/DH5_BUILT_AS_DYNAMIC_LIB']
             extra_link_args = []
         else:
             # GCC/Clang compiler flags (macOS/Linux)
@@ -264,7 +265,8 @@ else:
 # Platform-specific compiler/linker flags
 if sys.platform == 'win32':
     # MSVC uses /I for include paths and /LIBPATH: for library paths
-    compile_flags = [f"/I{hdf5_paths['include_dir']}"]
+    # /DH5_BUILT_AS_DYNAMIC_LIB tells HDF5 headers to use dynamic linking
+    compile_flags = [f"/I{hdf5_paths['include_dir']}", "/DH5_BUILT_AS_DYNAMIC_LIB"]
     link_flags = [f"/LIBPATH:{hdf5_paths['library_dir']}"]
 else:
     # GCC/Clang use -I and -L
