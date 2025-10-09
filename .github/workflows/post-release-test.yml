@@ -42,7 +42,8 @@ jobs:
           python -c "import sz_se_detect; print('sz_se_detect imported successfully')"
           python -c "import signal_analyzer; print('signal_analyzer imported successfully')"
 
-      - name: Download test .brw file
+      - name: Download test .brw file (macOS)
+        if: runner.os == 'macOS'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -51,6 +52,16 @@ jobs:
             --repo ${{ github.repository }} \
             --pattern "test_recording.brw" \
             --dir ./test_data || echo "Test data release not found, will skip file test"
+
+      - name: Download test .brw file (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Download the test file from the latest release tagged as 'test-data'
+          gh release download test-data --repo ${{ github.repository }} --pattern "test_recording.brw" --dir ./test_data
+          if ($LASTEXITCODE -ne 0) { Write-Host "Test data release not found, will skip file test" }
 
       - name: Run integration test (macOS)
         if: runner.os == 'macOS' && hashFiles('test_data/test_recording.brw') != ''
